@@ -1,4 +1,4 @@
-package base.controller.crud;
+package base.controller.crud.jpa;
 
 import base.controller.abstractions.BaseController;
 import base.service.jpa.ReadJpaService;
@@ -6,15 +6,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
-import java.util.Optional;
-import org.springdoc.api.annotations.ParameterObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-
 
 public interface ReadController<D, E, I> extends BaseController<D, E> {
 
@@ -31,8 +31,10 @@ public interface ReadController<D, E, I> extends BaseController<D, E> {
       parameters = @Parameter(name = "id", description = "Идентификатор сущности", required = true)
   )
   @GetMapping("/find-by-id/{id}")
-  default Optional<D> findById(@PathVariable I id) {
-    return svc().findByIdDto(id);
+  default ResponseEntity<D> findById(@PathVariable I id) {
+    return svc().findByIdDto(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
   }
 
   @Operation(summary = "Поиск",
@@ -40,8 +42,12 @@ public interface ReadController<D, E, I> extends BaseController<D, E> {
       parameters = @Parameter(name = "ids", description = "Идентификаторы искомых сущностей в виде id1,id2,id3", required = true)
   )
   @GetMapping("/find-all-by-id")
-  default List<D> findAllById(@RequestParam List<I> ids) {
-    return svc().findAllByIdDto(ids);
+  default ResponseEntity<List<D>> findAllById(@RequestParam List<I> ids) {
+    List<D> results = svc().findAllByIdDto(ids);
+    if (results.isEmpty()) {
+      return ResponseEntity.noContent().build();  // Если список пуст, возвращаем 204 No Content
+    }
+    return ResponseEntity.ok(results);  // Если найдены, возвращаем 200 OK
   }
 
   @Operation(summary = "Поиск сущностей с поддержкой пагинации",

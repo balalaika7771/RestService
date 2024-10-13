@@ -4,18 +4,22 @@ import base.service.abstractions.BaseJdbcService;
 import jakarta.persistence.Column;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.data.annotation.Id;
-
 
 /**
  * Сервис, способный создавать сущности
  *
- * @param <D> Тип дто
- * @param <E> Тип Сущности
- * @author Ivan Zhendorenko
+ * @param <D> Тип DTO
+ * @param <E> Тип сущности
+ * @author
  */
 public interface CreateJdbcService<D, E> extends BaseJdbcService<D, E> {
+
+  // Кеш для SQL-запросов
+  Map<Class<?>, String> sqlCache = new ConcurrentHashMap<>();
 
   /**
    * Выполняет пакетную вставку.
@@ -31,16 +35,22 @@ public interface CreateJdbcService<D, E> extends BaseJdbcService<D, E> {
     E firstEntity = entities.get(0);
     Class<?> entityClass = firstEntity.getClass();
 
-    // Генерируем SQL-запрос для вставки
-    String tableName = entityClass.getSimpleName().toLowerCase();
-    List<Field> fields = getFieldsWithoutId(entityClass);
-    String fieldNames = fields.stream()
-                              .map(field -> field.isAnnotationPresent(Column.class) ? field.getAnnotation(Column.class).name() : field.getName())
-                              .collect(Collectors.joining(", "));
-    String placeholders = fields.stream()
-                                .map(field -> "?")
+    // Получаем SQL-запрос из кеша или генерируем и кешируем его
+    String sql = sqlCache.computeIfAbsent(entityClass, cls -> {
+      // Генерируем SQL-запрос для вставки
+      String tableName = cls.getSimpleName().toLowerCase();
+      List<Field> fields = getFieldsWithoutId(cls);
+      String fieldNames = fields.stream()
+                                .map(field -> field.isAnnotationPresent(Column.class) ? field.getAnnotation(Column.class).name() : field.getName())
                                 .collect(Collectors.joining(", "));
-    String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", tableName, fieldNames, placeholders);
+      String placeholders = fields.stream()
+                                  .map(field -> "?")
+                                  .collect(Collectors.joining(", "));
+      return String.format("INSERT INTO %s (%s) VALUES (%s)", tableName, fieldNames, placeholders);
+    });
+
+    // Получаем список полей без поля @Id
+    List<Field> fields = getFieldsWithoutId(entityClass);
 
     // Преобразуем сущности в массивы аргументов для PreparedStatement
     List<Object[]> batchArgs = entities.stream()

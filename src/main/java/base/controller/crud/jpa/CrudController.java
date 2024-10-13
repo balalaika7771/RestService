@@ -1,4 +1,4 @@
-package base.controller.crud;
+package base.controller.crud.jpa;
 
 
 import base.service.jpa.CrudJpaService;

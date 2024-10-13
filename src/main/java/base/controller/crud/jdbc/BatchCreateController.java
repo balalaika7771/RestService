@@ -1,7 +1,7 @@
-package base.controller.crud;
+package base.controller.crud.jdbc;
 
 import base.controller.abstractions.BaseController;
-import base.service.jdbc.CreateJdbcService;
+import base.service.jdbc.CRJdbcService;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.Collection;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  *
  * @author Ivan Zhendorenko
  */
-public interface BatchCreateController<D, E> extends BaseController<D, E> {
+public interface BatchCreateController<D, E, I> extends BaseController<D, E> {
 
   /**
    * Сервис, используемый контроллером
@@ -21,7 +21,7 @@ public interface BatchCreateController<D, E> extends BaseController<D, E> {
    * @return Сервис
    */
   @Override
-  CreateJdbcService<D, E> svc();
+  CRJdbcService<D, E, I> svc();
 
   @Operation(summary = "Сохранение большой коллекции",
       description = "Сохранение большой коллекции сущностей",
@@ -30,7 +30,7 @@ public interface BatchCreateController<D, E> extends BaseController<D, E> {
           required = true
       )
   )
-  @PostMapping("/save-all-batch")
+  @PostMapping("/save-all")
   default void saveAllBatch(@RequestBody Collection<D> dtos) {
     var entities = svc().t().dtosToEntities(dtos);
     svc().insertAll(entities);

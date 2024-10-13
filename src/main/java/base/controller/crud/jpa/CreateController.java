@@ -1,4 +1,5 @@
-package base.controller.crud;
+package base.controller.crud.jpa;
+
 
 /**
  * Контроллер с Create-операциями

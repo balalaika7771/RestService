@@ -1,7 +1,7 @@
 package org.example.restservice.controller;
 
-import base.controller.crud.BatchCreateController;
-import base.service.jdbc.CreateJdbcService;
+import base.controller.crud.jdbc.CRJdbcController;
+import base.service.jdbc.CRJdbcService;
 import lombok.RequiredArgsConstructor;
 import org.example.restservice.dto.ProductDto;
 import org.example.restservice.entity.Product;
@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/product")
+@RequestMapping("/api/product/jdbc")
 @RequiredArgsConstructor
-public class ProductBatchController implements BatchCreateController<ProductDto, Product> {
+public class ProductJdbcController implements CRJdbcController<ProductDto, Product, Long> {
 
   private final ProductService productService;
 
   @Override
-  public CreateJdbcService<ProductDto, Product> svc() {
+  public CRJdbcService<ProductDto, Product, Long> svc() {
     return productService;
   }
 }

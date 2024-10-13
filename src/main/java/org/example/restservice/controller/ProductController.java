@@ -1,6 +1,6 @@
 package org.example.restservice.controller;
 
-import base.controller.crud.CrudController;
+import base.controller.crud.jpa.CrudController;
 import base.service.jpa.CrudJpaService;
 import lombok.RequiredArgsConstructor;
 import org.example.restservice.dto.ProductDto;
