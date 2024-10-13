@@ -7,7 +7,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.example.restservice.dto.ProductDto;
 import org.junit.jupiter.api.AfterAll;
@@ -30,10 +29,10 @@ public class ProductPerformanceTest {
   private WebTestClient webTestClient;
 
   private ExecutorService executorService;
-  private final int THREAD_POOL_SIZE = 100;
 
   @BeforeAll
   public void setup() {
+    int THREAD_POOL_SIZE = 8;
     executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
   }
 
@@ -58,7 +57,7 @@ public class ProductPerformanceTest {
     double median = getPercentile(responseTimes, 50) - startTime;
     double p95 = getPercentile(responseTimes, 95) - startTime;
     double p99 = getPercentile(responseTimes, 99) - startTime;
-    double maxTime = responseTimes.get(responseTimes.size() - 1) - startTime;
+    double maxTime = responseTimes.getLast() - startTime;
 
     System.out.println("Median Time (50%): " + median + " ms");
     System.out.println("95th Percentile: " + p95 + " ms");
@@ -76,7 +75,7 @@ public class ProductPerformanceTest {
     // Create a list of products
     List<ProductDto> products = IntStream.range(0, totalRecords)
                                          .mapToObj(i -> new ProductDto("Product JDBC " + i))
-                                         .collect(Collectors.toList());
+                                         .toList();
 
     long saveStartTime = System.currentTimeMillis();
 
@@ -93,23 +92,22 @@ public class ProductPerformanceTest {
 
     // Step 2: Read 1,000,000 random records with 100 concurrent connections
     System.out.println("Starting JDBC read test...");
-    long maxId = totalRecords; // IDs from 1 to totalRecords
-    int totalRequests = 1_000_000;
     int batchSize = 10_000; // Batch size
-    int batches = totalRequests / batchSize;
+    int batches = 100;
 
     List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
 
     Long startTime = System.currentTimeMillis();
 
+    CountDownLatch readLatch = new CountDownLatch(batches);
     for (int batch = 0; batch < batches; batch++) {
-      CountDownLatch readLatch = new CountDownLatch(batchSize);
-      List<Long> randomIds = new Random().longs(batchSize, 1, maxId + 1).boxed().collect(Collectors.toList());
 
-      for (Long id : randomIds) {
-        executorService.submit(() -> {
+      int finalBatch = batch;
+      executorService.submit(() -> {
 
+        List<Long> randomIds = new Random().longs(batchSize, 1, (long) totalRecords + 1).boxed().toList();
 
+        randomIds.forEach(id -> {
           webTestClient.get()
                        .uri("/api/product/jdbc/find-by-id/{id}", id)
                        .exchange()
@@ -118,15 +116,13 @@ public class ProductPerformanceTest {
                        .returnResult();
 
           responseTimes.add(System.currentTimeMillis());
-
-          readLatch.countDown();
         });
-      }
 
-      readLatch.await();
-      System.out.println("Batch " + (batch + 1) + " of " + batches + " completed");
+        readLatch.countDown();
+        System.out.println("Batch " + (finalBatch + 1) + " of " + batches + " completed");
+      });
     }
-
+    readLatch.await();
     // Calculate and print statistics
     calculateAndPrintStatistics(responseTimes, startTime);
   }
@@ -141,7 +137,7 @@ public class ProductPerformanceTest {
     // Create a list of products
     List<ProductDto> products = IntStream.range(0, totalRecords)
                                          .mapToObj(i -> new ProductDto("Product JPA " + i))
-                                         .collect(Collectors.toList());
+                                         .toList();
 
     long saveStartTime = System.currentTimeMillis();
 
@@ -158,22 +154,22 @@ public class ProductPerformanceTest {
 
     // Step 2: Read 1,000,000 random records with 100 concurrent connections
     System.out.println("Starting JPA read test...");
-    long maxId = totalRecords; // IDs from 1 to totalRecords
-    int totalRequests = 1_000_000;
     int batchSize = 10_000; // Batch size
-    int batches = totalRequests / batchSize;
+    int batches = 100;
 
     List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
 
     Long startTime = System.currentTimeMillis();
 
+    CountDownLatch readLatch = new CountDownLatch(batches);
     for (int batch = 0; batch < batches; batch++) {
-      CountDownLatch readLatch = new CountDownLatch(batchSize);
-      List<Long> randomIds = new Random().longs(batchSize, 1, maxId + 1).boxed().collect(Collectors.toList());
 
-      for (Long id : randomIds) {
-        executorService.submit(() -> {
+      int finalBatch = batch;
+      executorService.submit(() -> {
 
+        List<Long> randomIds = new Random().longs(batchSize, 1, (long) totalRecords + 1).boxed().toList();
+
+        randomIds.forEach(id -> {
           webTestClient.get()
                        .uri("/api/product/find-by-id/{id}", id)
                        .exchange()
@@ -181,17 +177,15 @@ public class ProductPerformanceTest {
                        .expectBody(byte[].class)
                        .returnResult();
 
-
           responseTimes.add(System.currentTimeMillis());
-
-          readLatch.countDown();
         });
-      }
 
-      readLatch.await();
-      System.out.println("Batch " + (batch + 1) + " of " + batches + " completed");
+        readLatch.countDown();
+        System.out.println("Batch " + (finalBatch + 1) + " of " + batches + " completed");
+      });
+
     }
-
+    readLatch.await();
     // Calculate and print statistics
     calculateAndPrintStatistics(responseTimes, startTime);
   }
