@@ -1,3 +1,5 @@
+[![Java CI](https://github.com/balalaika7771/RestService/actions/workflows/ci.yml/badge.svg)](https://github.com/balalaika7771/RestService/actions/workflows/ci.yml) 
+
 ### Описание проекта
 
 Этот проект представляет собой Rest API сервис для работы с условной сущностью Product. Сервис реализован на основе Spring Boot и поддерживает CRUD операции, а также позволяет сравнить производительность JDBC и JPA.
