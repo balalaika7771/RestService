@@ -32,7 +32,7 @@ public class ProductPerformanceTest {
 
   @BeforeAll
   public void setup() {
-    int THREAD_POOL_SIZE = 8;
+    int THREAD_POOL_SIZE = 100;
     executorService = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
   }
 
