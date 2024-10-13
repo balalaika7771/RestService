@@ -52,7 +52,7 @@
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone <repository_url>
+   git clone https://github.com/balalaika7771/RestService.git
    ```
 
 2. Убедитесь, что у вас установлена Java 11 и Maven.
